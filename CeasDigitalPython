@@ -1,0 +1,68 @@
+from  tkinter import Tk, Label, Entry, Button 
+import requests 
+import time 
+
+master = Tk()
+master.title("Ceas Digital")
+
+
+def get_time():
+    timeVar = time.strftime("%I:%M:%S %p")
+    clock.config(text=timeVar)
+    clock.after(200, get_time)
+
+def validate_input(city):
+    if not city:
+        city_time.config(text="Introduceți un oraș valid")
+        return False
+
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid=bbf72ade27d7096cf77ec38078dcbb82"
+    response = requests.get(url)
+    if response.status_code == 404:
+        city_time.config(text=f"Nu s-a putut găsi orașul {city}")
+        return False
+
+    return True
+
+def get_city_time():
+    city = city_entry.get()
+
+    url = f"http://worldtimeapi.org/api/timezone/{city}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        local_time = time.strftime("%I:%M:%S %p", time.localtime(data["unixtime"]))
+        city_time.config(text=f"Ora locală în {city} este {local_time}")
+    else:
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid=bbf72ade27d7096cf77ec38078dcbb82"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            lat = data["coord"]["lat"]
+            lon = data["coord"]["lon"]
+            url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude=minutely,hourly,daily,alerts&appid=bbf72ade27d7096cf77ec38078dcbb82"
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                local_time = time.strftime("%I:%M:%S %z %p", time.localtime(data["current"]["dt"]))
+                city_time.config(text=f"Ora locală în {city} este {local_time}")
+            else:
+                city_time.config(text=f"Nu s-a putut obține ora locală a orașului {city}")
+        else:
+            city_time.config(text=f"Nu s-a putut găsi orașul {city}")
+
+
+
+clock = Label(master, font=("Times New Roman", 80), background="white", foreground="black")
+clock.pack()
+city_time = Label(master, font=("Arial", 25), background="black", foreground="black")
+search_button = Button(master, text="Căutare", command=get_city_time)
+search_button.pack()
+city_entry = Entry(master)
+city_entry.pack()
+
+
+get_time()
+master.mainloop()  
+
+#sa fac o bara de search unde pot sa scriu orasu si sa imi arate ora de acolo           
